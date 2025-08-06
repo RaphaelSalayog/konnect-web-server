@@ -1,13 +1,7 @@
 import { DataTypes } from "sequelize";
-import bcrypt from "bcrypt";
 import sequelize from "../utils/database";
 
-const User = sequelize.define("User", {
-    // id: {
-    //     type: DataTypes.UUID,
-    //     defaultValue: DataTypes.UUIDV4,
-    //     primaryKey: true,
-    // },
+const Inventory = sequelize.define("Inventory", {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -17,22 +11,35 @@ const User = sequelize.define("User", {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    email: {
+    description: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true,
-        validate: {
-            isEmail: true,
-        },
     },
-    password: {
+    category: {
         type: DataTypes.STRING,
         allowNull: false,
-        set(value: string) {
-            const salt = bcrypt.genSaltSync(10);
-            (this as any).setDataValue("password", bcrypt.hashSync(value, salt));
-        },
+    },
+    quantity: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    unit_cost: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    price: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+    photo: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    isDeleted: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
     },
 });
 
-export default User;
+export default Inventory;
