@@ -5,6 +5,8 @@ import cors from "cors";
 import { connectDB } from "./utils/database";
 import relationships from "./model";
 import inventoryRouter from "./routes/inventory";
+import authRoute from "./routes/auth";
+import isAuth from "./middleware/isAuth";
 
 dotenv.config();
 const app = express();
@@ -21,8 +23,8 @@ app.use(
 );
 
 relationships();
-// app.use(authRoute);
-app.use("/inventory", inventoryRouter);
+app.use(authRoute);
+app.use("/inventory", isAuth, inventoryRouter);
 
 app.use((error: any, req: Request, res: Response, next: NextFunction) => {
     console.log(error);
