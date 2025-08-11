@@ -6,18 +6,18 @@ const jwt = require("jsonwebtoken");
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { email, password } = req.body.payload;
+        const { username, password } = req.body.payload;
 
         const user: any = await User.findOne({
             where: {
-                email,
+                username,
             },
         });
 
         if (!user) {
             return next({
                 statusCode: 404,
-                message: "Email does not exist!",
+                message: "Username does not exist!",
             });
         }
 
@@ -31,7 +31,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
         const token = jwt.sign(
             {
-                email: user.email,
+                username: user.username,
                 first_name: user.firstName,
                 last_name: user.lastName,
             },
@@ -56,16 +56,16 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
         const payload = req.body.payload;
         const { password, ...restData } = payload;
 
-        const isEmailExist = await User.findOne({
+        const isUsernameExist = await User.findOne({
             where: {
-                email: payload.email,
+                username: payload.username,
             },
         });
 
-        if (isEmailExist) {
+        if (isUsernameExist) {
             return next({
                 statusCode: 409,
-                message: "Email already exists!",
+                message: "Username already exists!",
             });
         }
 
