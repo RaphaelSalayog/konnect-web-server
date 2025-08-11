@@ -27,7 +27,7 @@ export const getAllInventory = async (req: Request, res: Response, next: NextFun
             order: [["updatedAt", "DESC"]],
         });
 
-        res.status(200).json({ data: resp });
+        res.status(200).json(resp);
     } catch (error: any) {
         next({
             statusCode: 400,
@@ -47,7 +47,7 @@ export const getInventoryById = async (req: Request, res: Response, next: NextFu
             attributes: { exclude: ["isDeleted"] },
         });
 
-        res.status(200).json({ data: resp });
+        res.status(200).json(resp);
     } catch (error: any) {
         next({
             statusCode: 400,
@@ -62,7 +62,7 @@ export const createInventory = async (req: Request, res: Response, next: NextFun
         const plainResp = resp.get({ plain: true });
         delete plainResp.isDeleted;
 
-        res.status(201).json({ data: plainResp });
+        res.status(201).json(plainResp);
     } catch (error: any) {
         next({
             statusCode: 400,
@@ -78,7 +78,7 @@ export const updateInventory = async (req: Request, res: Response, next: NextFun
             where: { id },
         });
 
-        res.status(200).json({ data: resp });
+        res.status(200).json(resp);
     } catch (error: any) {
         next({
             statusCode: 400,
@@ -97,7 +97,7 @@ export const deleteInventory = async (req: Request, res: Response, next: NextFun
             }
         );
 
-        res.status(200).json({ data: resp });
+        res.status(200).json(resp);
     } catch (error: any) {
         next({
             statusCode: 400,

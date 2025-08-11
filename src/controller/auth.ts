@@ -78,7 +78,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
         });
         delete (resp as any).password_hash;
 
-        res.json({ data: resp });
+        res.json(resp);
     } catch (error: any) {
         next({
             statusCode: 400,
