@@ -1,16 +1,18 @@
 import { NextFunction, Request, Response } from "express";
-import Inventory from "../model/inventory";
 import { col, fn, Op, where } from "sequelize";
-import { requestHandler } from "../utils/requestHandler";
+import Inventory from "../model/inventory";
+import { handleAttachments } from "../utils/handleAttachments";
+import { handleRequest } from "../utils/handleRequest";
+import { stripKeys } from "../utils/stripKeys";
 
 export const getAllInventory = async (req: Request, res: Response, next: NextFunction) => {
     const {
         search,
         filters,
         pagination: { offset, limit },
-    } = requestHandler({ body: req.body });
+    } = handleRequest({ body: req.body });
 
-    const whereCondition: any = { isDeleted: 0 };
+    const whereCondition: any = {};
 
     if (search) {
         whereCondition.name = where(fn("LOWER", col("name")), {
@@ -19,15 +21,15 @@ export const getAllInventory = async (req: Request, res: Response, next: NextFun
     }
 
     try {
-        const resp = await Inventory.findAll({
+        const resp = await Inventory.findAndCountAll({
             where: whereCondition,
-            attributes: { exclude: ["isDeleted"] },
+            attributes: { exclude: ["createdAt", "updatedAt", "deletedAt"] },
             limit: limit,
             offset: offset,
             order: [["updatedAt", "DESC"]],
         });
 
-        res.status(200).json(resp);
+        res.status(200).json({ lists: resp.rows, total: resp.count });
     } catch (error: any) {
         next({
             statusCode: 400,
@@ -58,11 +60,27 @@ export const getInventoryById = async (req: Request, res: Response, next: NextFu
 
 export const createInventory = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const resp = await Inventory.create(req.body.payload);
-        const plainResp = resp.get({ plain: true });
-        delete plainResp.isDeleted;
+        const { attachments, ...restDataPayload } = req.body.payload;
 
-        res.status(201).json(plainResp);
+        const respInventory = await Inventory.create(restDataPayload);
+        const respInventoryData = stripKeys(respInventory, ["createdAt", "updatedAt", "deletedAt"]);
+
+        const respAttachments = await handleAttachments(
+            attachments,
+            "inventory",
+            respInventoryData.id
+        );
+        const respAttachmentsData = respAttachments.map((attachment) =>
+            stripKeys(attachment, [
+                "createdAt",
+                "updatedAt",
+                "deletedAt",
+                "inventory_id",
+                "user_id",
+            ])
+        );
+
+        res.status(201).json({ ...respInventoryData, attachments: respAttachmentsData });
     } catch (error: any) {
         next({
             statusCode: 400,

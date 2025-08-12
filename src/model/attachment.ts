@@ -1,37 +1,39 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../utils/database";
+import Inventory from "./inventory";
+import User from "./user";
 
-const Inventory = sequelize.define(
-    "Inventory",
+const Attachment = sequelize.define(
+    "Attachment",
     {
         id: {
             type: DataTypes.INTEGER,
             autoIncrement: true,
             primaryKey: true,
         },
-        name: {
+        file_name: {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        description: {
+        s3_key: {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        category: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        quantity: {
+        user_id: {
             type: DataTypes.INTEGER,
-            allowNull: false,
+            allowNull: true,
+            references: {
+                model: User,
+                key: "id",
+            },
         },
-        unit_cost: {
+        inventory_id: {
             type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-        price: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
+            allowNull: true,
+            references: {
+                model: Inventory,
+                key: "id",
+            },
         },
     },
     {
@@ -39,4 +41,4 @@ const Inventory = sequelize.define(
     }
 );
 
-export default Inventory;
+export default Attachment;

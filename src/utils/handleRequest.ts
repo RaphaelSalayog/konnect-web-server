@@ -23,7 +23,7 @@ interface RequestHandlerResult<T = unknown> {
     };
 }
 
-export const requestHandler = <T = unknown>({
+export const handleRequest = <T = unknown>({
     body,
     paginationDefault = { page: 1, limit: 10 },
 }: RequestHandlerParams<T>): RequestHandlerResult<T> => {
