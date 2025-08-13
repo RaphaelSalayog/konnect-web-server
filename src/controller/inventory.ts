@@ -60,7 +60,7 @@ export const getInventoryById = async (req: Request, res: Response, next: NextFu
 
 export const createInventory = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { attachments, ...restDataPayload } = req.body.payload;
+        const { attachments, ...restDataPayload } = req.body;
 
         const respInventory = await Inventory.create(restDataPayload);
         const respInventoryData = stripKeys(respInventory, ["createdAt", "updatedAt", "deletedAt"]);
@@ -91,7 +91,7 @@ export const createInventory = async (req: Request, res: Response, next: NextFun
 
 export const updateInventory = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id, ...restData } = req.body.payload;
+        const { id, ...restData } = req.body;
         const resp = await Inventory.update(restData, {
             where: { id },
         });
@@ -107,7 +107,7 @@ export const updateInventory = async (req: Request, res: Response, next: NextFun
 
 export const deleteInventory = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.body.payload;
+        const { id } = req.body;
         const resp = await Inventory.update(
             { isDeleted: 1 },
             {

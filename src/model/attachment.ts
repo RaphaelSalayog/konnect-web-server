@@ -26,6 +26,7 @@ const Attachment = sequelize.define(
                 model: User,
                 key: "id",
             },
+            onDelete: "CASCADE",
         },
         inventory_id: {
             type: DataTypes.INTEGER,
@@ -34,6 +35,7 @@ const Attachment = sequelize.define(
                 model: Inventory,
                 key: "id",
             },
+            onDelete: "CASCADE",
         },
     },
     {
