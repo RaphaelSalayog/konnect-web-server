@@ -1,11 +1,16 @@
 import { handlePresignedUrl } from "./handlePresignedUrl";
 
-// utils/withPresignedUrls.ts
-export async function handleAttachPresignedUrls<T extends { [key: string]: any }>(
-    dataSet: T[],
-    bucketName: string,
-    attachmentKeys: string[]
-) {
+type IHandleAttachPresignedUrls<T> = {
+    dataSet: T[];
+    bucketName: string;
+    attachmentKeys: string[];
+};
+
+export const handleAttachPresignedUrls = async <T extends { [key: string]: any }>({
+    dataSet,
+    bucketName,
+    attachmentKeys,
+}: IHandleAttachPresignedUrls<T>) => {
     return Promise.all(
         dataSet.map(async (data) => {
             const plainRow = data.get ? data.get({ plain: true }) : data;
@@ -14,10 +19,10 @@ export async function handleAttachPresignedUrls<T extends { [key: string]: any }
                 if (plainRow[key]?.length) {
                     plainRow[key] = await Promise.all(
                         plainRow[key].map(async (attachment: any) => {
-                            const presignedUrl = await handlePresignedUrl(
+                            const presignedUrl = await handlePresignedUrl({
                                 bucketName,
-                                attachment.file_path
-                            );
+                                path: attachment.file_path,
+                            });
                             return { ...attachment, presignedUrl };
                         })
                     );
@@ -27,4 +32,4 @@ export async function handleAttachPresignedUrls<T extends { [key: string]: any }
             return plainRow;
         })
     );
-}
+};

@@ -3,8 +3,8 @@ import { col, fn, Op, where } from "sequelize";
 import { BUCKET_NAME, TABLE_NAME } from "../constants/constants";
 import { handleAttachPresignedUrls } from "../helper/handleAttachPresignedUrls";
 import { handleAttachments } from "../helper/handleAttachments";
+import { handleGetPlainData } from "../helper/handleGetPlainData";
 import { handleRequest } from "../helper/handleRequest";
-import { handleStripKeys } from "../helper/handleStripKeys";
 import Attachment from "../model/attachment";
 import Inventory from "../model/inventory";
 import sequelize from "../utils/database";
@@ -42,11 +42,11 @@ export const getAllInventory = async (req: Request, res: Response, next: NextFun
             ],
         });
 
-        const dataWithPresignedUrls = await handleAttachPresignedUrls(
-            resp.rows,
-            BUCKET_NAME.inventory,
-            ["attachments"]
-        );
+        const dataWithPresignedUrls = await handleAttachPresignedUrls({
+            dataSet: resp.rows,
+            bucketName: BUCKET_NAME.inventory,
+            attachmentKeys: ["attachments"],
+        });
 
         const modifiedData = dataWithPresignedUrls.map(({ updatedAt, ...restData }) => restData); // to remove updatedAt key
 
@@ -81,11 +81,11 @@ export const getInventoryById = async (req: Request, res: Response, next: NextFu
             return null;
         }
 
-        const dataWithPresignedUrls = await handleAttachPresignedUrls(
-            [resp],
-            BUCKET_NAME.inventory,
-            ["attachments"]
-        );
+        const dataWithPresignedUrls = await handleAttachPresignedUrls({
+            dataSet: [resp],
+            bucketName: BUCKET_NAME.inventory,
+            attachmentKeys: ["attachments"],
+        });
 
         res.status(200).json(...dataWithPresignedUrls);
     } catch (error: any) {
@@ -103,27 +103,29 @@ export const createInventory = async (req: Request, res: Response, next: NextFun
             const { attachments, ...restDataPayload } = req.body;
 
             const respInventory = await Inventory.create(restDataPayload, { transaction: t });
-            const respInventoryData = handleStripKeys(respInventory, [
-                "createdAt",
-                "updatedAt",
-                "deletedAt",
-            ]);
+            const respInventoryData = handleGetPlainData({
+                dataSet: respInventory,
+                keysToRemove: ["createdAt", "updatedAt", "deletedAt"],
+            });
 
-            const respAttachments = await handleAttachments(
+            const respAttachments = await handleAttachments({
                 attachments,
-                TABLE_NAME.inventory,
-                respInventoryData.id,
-                t
-            );
+                tableName: TABLE_NAME.inventory,
+                entity_id: respInventoryData.id,
+                transaction: t,
+            });
 
             const respAttachmentsData = respAttachments.map((attachment) =>
-                handleStripKeys(attachment, [
-                    "createdAt",
-                    "updatedAt",
-                    "deletedAt",
-                    "inventory_id",
-                    "user_id",
-                ])
+                handleGetPlainData({
+                    dataSet: attachment,
+                    keysToRemove: [
+                        "createdAt",
+                        "updatedAt",
+                        "deletedAt",
+                        "inventory_id",
+                        "user_id",
+                    ],
+                })
             );
 
             res.status(201).json({ ...respInventoryData, attachments: respAttachmentsData });

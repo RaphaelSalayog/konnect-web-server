@@ -7,12 +7,19 @@ type IAttachment = {
     file_path: string;
 };
 
-export const handleAttachments = async (
-    attachments: IAttachment[],
-    tableName: string,
-    entity_id: number,
-    transaction?: Transaction // For Transaction commit/rollback
-) => {
+type IHandleAttachments = {
+    attachments: IAttachment[];
+    tableName: string;
+    entity_id: number;
+    transaction?: Transaction; // Optional transaction for commit/rollback
+};
+
+export const handleAttachments = async ({
+    attachments,
+    tableName,
+    entity_id,
+    transaction, // For Transaction commit/rollback
+}: IHandleAttachments) => {
     try {
         const modifiedAttachment = attachments.map((item) => ({
             ...item,
