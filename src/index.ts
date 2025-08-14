@@ -2,7 +2,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express, { NextFunction, Request, Response } from "express";
 import isAuth from "./middleware/isAuth";
-import relationships from "./model";
+import associations from "./model";
 import authRoute from "./routes/auth";
 import inventoryRouter from "./routes/inventory";
 import { connectDB } from "./utils/database";
@@ -21,7 +21,7 @@ app.use(
     express.json()
 );
 
-relationships();
+associations();
 app.use(authRoute);
 app.use("/inventory", isAuth, inventoryRouter);
 

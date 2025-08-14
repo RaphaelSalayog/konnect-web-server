@@ -2,7 +2,7 @@ import Attachment from "./attachment";
 import Inventory from "./inventory";
 import User from "./user";
 
-const relationships = () => {
+const associations = () => {
     Inventory.hasMany(Attachment, { as: "attachments", foreignKey: "inventory_id" });
     Attachment.belongsTo(Inventory, { as: "inventory", foreignKey: "inventory_id" });
 
@@ -10,4 +10,4 @@ const relationships = () => {
     Attachment.belongsTo(User, { foreignKey: "user_id" });
 };
 
-export default relationships;
+export default associations;

@@ -26,12 +26,12 @@ export const getAllInventory = async (req: Request, res: Response, next: NextFun
 
     try {
         const resp = await Inventory.findAndCountAll({
-            subQuery: false, // to fix the error when doing JOIN (include attrib)
+            distinct: true, // Ensures we count only unique Inventory rows, avoiding duplicates caused by joined Attachments
             where: whereCondition,
-            attributes: { exclude: ["createdAt", "updatedAt", "deletedAt"] },
-            limit: limit,
-            offset: offset,
-            order: [["updatedAt", "DESC"]],
+            attributes: { exclude: ["createdAt", "deletedAt"] },
+            limit,
+            offset,
+            order: [["updatedAt", "DESC"]], // do not use 'attributes: { exclude: ["updatedAt"] }' if you are using it in order
             include: [
                 {
                     model: Attachment, // This will create an INNER JOIN
@@ -48,7 +48,9 @@ export const getAllInventory = async (req: Request, res: Response, next: NextFun
             ["attachments"]
         );
 
-        res.status(200).json({ lists: dataWithPresignedUrls, total: resp.count });
+        const modifiedData = dataWithPresignedUrls.map(({ updatedAt, ...restData }) => restData); // to remove updatedAt key
+
+        res.status(200).json({ lists: modifiedData, total: resp.count });
     } catch (error: any) {
         next({
             statusCode: 400,
@@ -59,7 +61,7 @@ export const getAllInventory = async (req: Request, res: Response, next: NextFun
 
 export const getInventoryById = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.body.payload;
+        const { id } = req.body;
         const resp = await Inventory.findOne({
             where: {
                 id: id,
