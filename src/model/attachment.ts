@@ -15,7 +15,7 @@ const Attachment = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false,
         },
-        s3_key: {
+        file_path: {
             type: DataTypes.STRING,
             allowNull: false,
         },
@@ -26,6 +26,7 @@ const Attachment = sequelize.define(
                 model: User,
                 key: "id",
             },
+            onUpdate: "CASCADE",
             onDelete: "CASCADE",
         },
         inventory_id: {
@@ -35,6 +36,7 @@ const Attachment = sequelize.define(
                 model: Inventory,
                 key: "id",
             },
+            onUpdate: "CASCADE",
             onDelete: "CASCADE",
         },
     },

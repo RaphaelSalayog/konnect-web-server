@@ -1,12 +1,11 @@
-import dotenv from "dotenv";
-import express, { Request, Response, NextFunction } from "express";
-// import { createClient } from "@supabase/supabase-js";
 import cors from "cors";
-import { connectDB } from "./utils/database";
-import relationships from "./model";
-import inventoryRouter from "./routes/inventory";
-import authRoute from "./routes/auth";
+import dotenv from "dotenv";
+import express, { NextFunction, Request, Response } from "express";
 import isAuth from "./middleware/isAuth";
+import relationships from "./model";
+import authRoute from "./routes/auth";
+import inventoryRouter from "./routes/inventory";
+import { connectDB } from "./utils/database";
 
 dotenv.config();
 const app = express();

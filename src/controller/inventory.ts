@@ -1,8 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import { col, fn, Op, where } from "sequelize";
+import { BUCKET_NAME } from "../constants/constants";
+import Attachment from "../model/attachment";
 import Inventory from "../model/inventory";
 import { handleAttachments } from "../utils/handleAttachments";
 import { handleRequest } from "../utils/handleRequest";
+import { handlePresignedUrl } from "../utils/handleSignedUrl";
 import { stripKeys } from "../utils/stripKeys";
 
 export const getAllInventory = async (req: Request, res: Response, next: NextFunction) => {
@@ -22,14 +25,43 @@ export const getAllInventory = async (req: Request, res: Response, next: NextFun
 
     try {
         const resp = await Inventory.findAndCountAll({
+            subQuery: false, // to fix the error when doing JOIN (include attrib)
             where: whereCondition,
             attributes: { exclude: ["createdAt", "updatedAt", "deletedAt"] },
             limit: limit,
             offset: offset,
             order: [["updatedAt", "DESC"]],
+            include: [
+                {
+                    model: Attachment, // This will create an INNER JOIN
+                    as: "attachments",
+                    attributes: ["id", "file_name", "file_path"],
+                    required: false, // Left Join
+                },
+            ],
         });
 
-        res.status(200).json({ lists: resp.rows, total: resp.count });
+        const rowsWithSignedUrls = await Promise.all(
+            resp.rows.map(async (inventory) => {
+                const plainInventory = inventory.get({ plain: true });
+
+                if (plainInventory.attachments?.length) {
+                    plainInventory.attachments = await Promise.all(
+                        plainInventory.attachments.map(async (attachment: any) => {
+                            const presignedUrl = await handlePresignedUrl(
+                                BUCKET_NAME.inventory,
+                                attachment.file_path
+                            );
+                            return { ...attachment, presignedUrl };
+                        })
+                    );
+                }
+
+                return plainInventory;
+            })
+        );
+
+        res.status(200).json({ lists: rowsWithSignedUrls, total: resp.count });
     } catch (error: any) {
         next({
             statusCode: 400,

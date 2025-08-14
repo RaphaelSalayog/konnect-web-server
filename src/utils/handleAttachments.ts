@@ -3,7 +3,7 @@ import Attachment from "../model/attachment";
 type IAttachment = {
     id?: number;
     file_name: string;
-    s3_key: string;
+    file_path: string;
 };
 
 export const handleAttachments = async (
@@ -29,7 +29,7 @@ export const handleAttachments = async (
 
         if (existingAttachments.length > 0) {
             const resp = await Attachment.bulkCreate(existingAttachments, {
-                updateOnDuplicate: ["file_name", "s3_key"], // Fields you want to update
+                updateOnDuplicate: ["file_name", "file_path"], // Fields you want to update
             });
             results.push(...resp);
         }
