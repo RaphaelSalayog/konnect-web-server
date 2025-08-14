@@ -1,3 +1,4 @@
+import { Transaction } from "sequelize";
 import Attachment from "../model/attachment";
 
 type IAttachment = {
@@ -9,7 +10,8 @@ type IAttachment = {
 export const handleAttachments = async (
     attachments: IAttachment[],
     tableName: string,
-    entity_id: number
+    entity_id: number,
+    transaction?: Transaction // For Transaction commit/rollback
 ) => {
     try {
         const modifiedAttachment = attachments.map((item) => ({
@@ -23,13 +25,16 @@ export const handleAttachments = async (
         const results: any[] = [];
 
         if (newAttachments.length > 0) {
-            const resp = await Attachment.bulkCreate(newAttachments);
+            const resp = await Attachment.bulkCreate(newAttachments, {
+                ...(transaction ? { transaction } : {}), // For Transaction commit/rollback
+            });
             results.push(...resp);
         }
 
         if (existingAttachments.length > 0) {
             const resp = await Attachment.bulkCreate(existingAttachments, {
                 updateOnDuplicate: ["file_name", "file_path"], // Fields you want to update
+                ...(transaction ? { transaction } : {}), // For Transaction commit/rollback
             });
             results.push(...resp);
         }

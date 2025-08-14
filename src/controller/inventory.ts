@@ -7,6 +7,7 @@ import { handleRequest } from "../helper/handleRequest";
 import { handleStripKeys } from "../helper/handleStripKeys";
 import Attachment from "../model/attachment";
 import Inventory from "../model/inventory";
+import sequelize from "../utils/database";
 
 export const getAllInventory = async (req: Request, res: Response, next: NextFunction) => {
     const {
@@ -95,32 +96,36 @@ export const getInventoryById = async (req: Request, res: Response, next: NextFu
 
 export const createInventory = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { attachments, ...restDataPayload } = req.body;
+        // For Transaction commit/rollback
+        await sequelize.transaction(async (t) => {
+            const { attachments, ...restDataPayload } = req.body;
 
-        const respInventory = await Inventory.create(restDataPayload);
-        const respInventoryData = handleStripKeys(respInventory, [
-            "createdAt",
-            "updatedAt",
-            "deletedAt",
-        ]);
-
-        const respAttachments = await handleAttachments(
-            attachments,
-            TABLE_NAME.inventory,
-            respInventoryData.id
-        );
-
-        const respAttachmentsData = respAttachments.map((attachment) =>
-            handleStripKeys(attachment, [
+            const respInventory = await Inventory.create(restDataPayload, { transaction: t });
+            const respInventoryData = handleStripKeys(respInventory, [
                 "createdAt",
                 "updatedAt",
                 "deletedAt",
-                "inventory_id",
-                "user_id",
-            ])
-        );
+            ]);
 
-        res.status(201).json({ ...respInventoryData, attachments: respAttachmentsData });
+            const respAttachments = await handleAttachments(
+                attachments,
+                TABLE_NAME.inventory,
+                respInventoryData.id,
+                t
+            );
+
+            const respAttachmentsData = respAttachments.map((attachment) =>
+                handleStripKeys(attachment, [
+                    "createdAt",
+                    "updatedAt",
+                    "deletedAt",
+                    "inventory_id",
+                    "user_id",
+                ])
+            );
+
+            res.status(201).json({ ...respInventoryData, attachments: respAttachmentsData });
+        });
     } catch (error: any) {
         next({
             statusCode: 400,
