@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseClient";
+import { supabase } from "../utils/supabaseClient";
 
 export const handlePresignedUrl = async (bucket_name: string, path: string, duration = 60) => {
     try {

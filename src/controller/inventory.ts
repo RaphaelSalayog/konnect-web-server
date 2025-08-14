@@ -1,12 +1,12 @@
 import { NextFunction, Request, Response } from "express";
 import { col, fn, Op, where } from "sequelize";
-import { BUCKET_NAME } from "../constants/constants";
+import { BUCKET_NAME, TABLE_NAME } from "../constants/constants";
+import { handleAttachPresignedUrls } from "../helper/handleAttachPresignedUrls";
+import { handleAttachments } from "../helper/handleAttachments";
+import { handleRequest } from "../helper/handleRequest";
+import { handleStripKeys } from "../helper/handleStripKeys";
 import Attachment from "../model/attachment";
 import Inventory from "../model/inventory";
-import { handleAttachments } from "../utils/handleAttachments";
-import { handleRequest } from "../utils/handleRequest";
-import { handlePresignedUrl } from "../utils/handleSignedUrl";
-import { stripKeys } from "../utils/stripKeys";
 
 export const getAllInventory = async (req: Request, res: Response, next: NextFunction) => {
     const {
@@ -41,27 +41,13 @@ export const getAllInventory = async (req: Request, res: Response, next: NextFun
             ],
         });
 
-        const rowsWithSignedUrls = await Promise.all(
-            resp.rows.map(async (inventory) => {
-                const plainInventory = inventory.get({ plain: true });
-
-                if (plainInventory.attachments?.length) {
-                    plainInventory.attachments = await Promise.all(
-                        plainInventory.attachments.map(async (attachment: any) => {
-                            const presignedUrl = await handlePresignedUrl(
-                                BUCKET_NAME.inventory,
-                                attachment.file_path
-                            );
-                            return { ...attachment, presignedUrl };
-                        })
-                    );
-                }
-
-                return plainInventory;
-            })
+        const dataWithPresignedUrls = await handleAttachPresignedUrls(
+            resp.rows,
+            BUCKET_NAME.inventory,
+            ["attachments"]
         );
 
-        res.status(200).json({ lists: rowsWithSignedUrls, total: resp.count });
+        res.status(200).json({ lists: dataWithPresignedUrls, total: resp.count });
     } catch (error: any) {
         next({
             statusCode: 400,
@@ -76,12 +62,29 @@ export const getInventoryById = async (req: Request, res: Response, next: NextFu
         const resp = await Inventory.findOne({
             where: {
                 id: id,
-                isDeleted: 0,
             },
-            attributes: { exclude: ["isDeleted"] },
+            attributes: { exclude: ["createdAt", "updatedAt", "deletedAt"] },
+            include: [
+                {
+                    model: Attachment, // This will create an INNER JOIN
+                    as: "attachments",
+                    attributes: ["id", "file_name", "file_path"],
+                    required: false, // Left Join
+                },
+            ],
         });
 
-        res.status(200).json(resp);
+        if (!resp) {
+            return null;
+        }
+
+        const dataWithPresignedUrls = await handleAttachPresignedUrls(
+            [resp],
+            BUCKET_NAME.inventory,
+            ["attachments"]
+        );
+
+        res.status(200).json(...dataWithPresignedUrls);
     } catch (error: any) {
         next({
             statusCode: 400,
@@ -95,15 +98,20 @@ export const createInventory = async (req: Request, res: Response, next: NextFun
         const { attachments, ...restDataPayload } = req.body;
 
         const respInventory = await Inventory.create(restDataPayload);
-        const respInventoryData = stripKeys(respInventory, ["createdAt", "updatedAt", "deletedAt"]);
+        const respInventoryData = handleStripKeys(respInventory, [
+            "createdAt",
+            "updatedAt",
+            "deletedAt",
+        ]);
 
         const respAttachments = await handleAttachments(
             attachments,
-            "inventory",
+            TABLE_NAME.inventory,
             respInventoryData.id
         );
+
         const respAttachmentsData = respAttachments.map((attachment) =>
-            stripKeys(attachment, [
+            handleStripKeys(attachment, [
                 "createdAt",
                 "updatedAt",
                 "deletedAt",
