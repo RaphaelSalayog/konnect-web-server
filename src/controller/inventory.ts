@@ -157,12 +157,9 @@ export const updateInventory = async (req: Request, res: Response, next: NextFun
 export const deleteInventory = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { id } = req.body;
-        const resp = await Inventory.update(
-            { isDeleted: 1 },
-            {
-                where: { id },
-            }
-        );
+        const resp = await Inventory.destroy({
+            where: { id },
+        });
 
         res.status(200).json(resp);
     } catch (error: any) {

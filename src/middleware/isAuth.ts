@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 const jwt = require("jsonwebtoken");
 
 const isAuth = async (req: Request, res: Response, next: NextFunction) => {
@@ -22,8 +22,8 @@ const isAuth = async (req: Request, res: Response, next: NextFunction) => {
         next();
     } catch (error: any) {
         next({
-            statusCode: 500,
-            message: "Something went wrong!",
+            statusCode: 401,
+            message: "Invalid or expired token!",
         });
     }
 };
