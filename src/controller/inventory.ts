@@ -78,7 +78,7 @@ export const getInventoryById = async (req: Request, res: Response, next: NextFu
         });
 
         if (!resp) {
-            return null;
+            return res.status(404).json({ message: "Item does not exist!" });
         }
 
         const dataWithPresignedUrls = await handleAttachPresignedUrls({
@@ -140,13 +140,78 @@ export const createInventory = async (req: Request, res: Response, next: NextFun
 
 export const updateInventory = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id, ...restData } = req.body;
-        const resp = await Inventory.update(restData, {
-            where: { id },
+        const { id, attachments, ...restData } = req.body;
+
+        const resp = await sequelize.transaction(async (t) => {
+            const [affectedCount] = await Inventory.update(restData, {
+                where: { id },
+                returning: true,
+                transaction: t,
+            });
+
+            if (affectedCount === 0) {
+                return res.status(404).json({ message: "Item does not exist!" });
+            }
+
+            const respAttachmentsData = await Attachment.findAll({
+                where: { inventory_id: id },
+                transaction: t,
+            });
+
+            const existingIds = respAttachmentsData.map((a: any) => a.id);
+            const payloadAttachmentsIds = attachments
+                .filter((a: any) => a.id)
+                .map((a: any) => a.id);
+            const toDelete = existingIds.filter((dbId) => !payloadAttachmentsIds.includes(dbId));
+
+            if (toDelete.length > 0) {
+                await Attachment.destroy({
+                    where: { id: toDelete },
+                    transaction: t,
+                });
+            }
+
+            await handleAttachments({
+                attachments,
+                tableName: TABLE_NAME.inventory,
+                entity_id: id,
+                transaction: t,
+            });
+
+            return { ok: true };
         });
 
-        res.status(200).json(resp);
-    } catch (error: any) {
+        if (!(resp as any).ok) {
+            throw new Error();
+        }
+
+        const respInventory = await Inventory.findOne({
+            where: {
+                id: id,
+            },
+            attributes: { exclude: ["createdAt", "updatedAt", "deletedAt"] },
+            include: [
+                {
+                    model: Attachment, // This will create an INNER JOIN
+                    as: "attachments",
+                    attributes: ["id", "file_name", "file_path"],
+                    required: false, // Left Join
+                },
+            ],
+        });
+
+        if (!respInventory) {
+            return res.status(404).json({ message: "Item does not exist!" });
+        }
+
+        const dataWithPresignedUrls = await handleAttachPresignedUrls({
+            dataSet: [respInventory],
+            bucketName: BUCKET_NAME.inventory,
+            attachmentKeys: ["attachments"],
+        });
+
+        res.status(200).json(...dataWithPresignedUrls);
+    } catch (error) {
         next({
             statusCode: 400,
             message: "Failed to update inventory. Please try again later.",

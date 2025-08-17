@@ -27,7 +27,7 @@ export const handleAttachments = async ({
         }));
 
         const newAttachments = modifiedAttachment.filter((item) => !item.id);
-        const existingAttachments = modifiedAttachment.filter((item) => item.id);
+        // const existingAttachments = modifiedAttachment.filter((item) => item.id);
 
         const results: any[] = [];
 
@@ -38,13 +38,13 @@ export const handleAttachments = async ({
             results.push(...resp);
         }
 
-        if (existingAttachments.length > 0) {
-            const resp = await Attachment.bulkCreate(existingAttachments, {
-                updateOnDuplicate: ["file_name", "file_path"], // Fields you want to update
-                ...(transaction ? { transaction } : {}), // For Transaction commit/rollback
-            });
-            results.push(...resp);
-        }
+        // if (existingAttachments.length > 0) {
+        //     const resp = await Attachment.bulkCreate(existingAttachments, {
+        //         updateOnDuplicate: ["file_name", "file_path"], // Fields you want to update
+        //         ...(transaction ? { transaction } : {}), // For Transaction commit/rollback
+        //     });
+        //     results.push(...resp);
+        // }
 
         return results;
     } catch (error) {
