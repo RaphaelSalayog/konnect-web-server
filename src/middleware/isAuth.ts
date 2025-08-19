@@ -19,6 +19,7 @@ const isAuth = async (req: Request, res: Response, next: NextFunction) => {
             });
         }
 
+        req.user = decodedToken;
         next();
     } catch (error: any) {
         next({

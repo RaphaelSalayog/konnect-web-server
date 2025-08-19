@@ -10,13 +10,16 @@ import Inventory from "../model/inventory";
 import sequelize from "../utils/database";
 
 export const getAllInventory = async (req: Request, res: Response, next: NextFunction) => {
+    const currentUser = req.user;
     const {
         search,
         filters,
         pagination: { offset, limit },
     } = handleRequest({ body: req.body });
 
-    const whereCondition: any = {};
+    const whereCondition: any = {
+        user_id: currentUser?.id,
+    };
 
     if (search) {
         whereCondition.name = where(fn("LOWER", col("name")), {
@@ -61,10 +64,12 @@ export const getAllInventory = async (req: Request, res: Response, next: NextFun
 
 export const getInventoryById = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const currentUser = req.user;
         const { id } = req.body;
         const resp = await Inventory.findOne({
             where: {
                 id: id,
+                user_id: currentUser?.id,
             },
             attributes: { exclude: ["createdAt", "updatedAt", "deletedAt"] },
             include: [
@@ -100,9 +105,13 @@ export const createInventory = async (req: Request, res: Response, next: NextFun
     try {
         // For Transaction commit/rollback
         await sequelize.transaction(async (t) => {
+            const currentUser = req.user;
             const { attachments, ...restDataPayload } = req.body;
 
-            const respInventory = await Inventory.create(restDataPayload, { transaction: t });
+            const respInventory = await Inventory.create(
+                { ...restDataPayload, user_id: currentUser?.id },
+                { transaction: t }
+            );
             const respInventoryData = handleGetPlainData({
                 dataSet: respInventory,
                 keysToRemove: ["createdAt", "updatedAt", "deletedAt"],
@@ -140,11 +149,12 @@ export const createInventory = async (req: Request, res: Response, next: NextFun
 
 export const updateInventory = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const currentUser = req.user;
         const { id, attachments, ...restData } = req.body;
 
         const resp = await sequelize.transaction(async (t) => {
             const [affectedCount] = await Inventory.update(restData, {
-                where: { id },
+                where: { id, user_id: currentUser?.id },
                 returning: true,
                 transaction: t,
             });
@@ -221,9 +231,10 @@ export const updateInventory = async (req: Request, res: Response, next: NextFun
 
 export const deleteInventory = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const currentUser = req.user;
         const { id } = req.body;
         const resp = await Inventory.destroy({
-            where: { id },
+            where: { id, user_id: currentUser?.id },
         });
 
         res.status(200).json(resp);

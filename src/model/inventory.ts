@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../utils/database";
+import User from "./user";
 
 const Inventory = sequelize.define(
     "Inventory",
@@ -32,6 +33,14 @@ const Inventory = sequelize.define(
         price: {
             type: DataTypes.INTEGER,
             allowNull: false,
+        },
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: User,
+                key: "id",
+            },
         },
     },
     {

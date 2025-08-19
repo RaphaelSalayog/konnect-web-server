@@ -1,6 +1,6 @@
+import bcrypt from "bcrypt";
 import { NextFunction, Request, Response } from "express";
 import User from "../model/user";
-import bcrypt from "bcrypt";
 
 const jwt = require("jsonwebtoken");
 
@@ -12,6 +12,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
             where: {
                 username,
             },
+            attributes: { exclude: ["createdAt", "updatedAt", "deletedAt"] },
         });
 
         if (!user) {
@@ -29,16 +30,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
             });
         }
 
-        const token = jwt.sign(
-            {
-                username: user.username,
-                first_name: user.firstName,
-                last_name: user.lastName,
-            },
-            process.env.JWT_SECRET_TOKEN
-        );
+        const userPlainData = user.get({ plain: true });
+        delete userPlainData.password_hash;
 
-        delete user.password;
+        const token = jwt.sign(userPlainData, process.env.JWT_SECRET_TOKEN);
         res.status(200).json({
             token,
             user,
